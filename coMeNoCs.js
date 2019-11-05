@@ -30,12 +30,12 @@ function paste(message){
     selStart = actEl.selectionStart;
     selStartCopy = selStart;
     selEnd = actEl.selectionEnd;
-    if(actEl.hasAttribute("value") || actEl.innerHTML =="" ){
+    if(actEl.hasAttribute("value") || actEl.innerText =="" ){
       intendedValue = actEl.value.slice(0,selStart) + message.content + actEl.value.slice(selEnd);
       actEl.value = intendedValue;
     }else{
-      intendedValue = actEl.innerHTML.slice(0,selStart) + message.content + actEl.innerHTML.slice(selEnd);
-      actEl.innerHTML = intendedValue;
+      intendedValue = actEl.innerText.slice(0,selStart) + message.content + actEl.innerText.slice(selEnd);
+      actEl.innerText = intendedValue;
     }
     actEl.selectionStart = selStartCopy + message.content.length;
     actEl.selectionEnd = selStartCopy + message.content.length;
