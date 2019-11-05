@@ -41,7 +41,7 @@ function paste(message){
     actEl.selectionEnd = selStartCopy + message.content.length;
   }else{
     let messageOverride = "It's impossible to input into non-standard input field, sorry. :-(\n" +
-      "Copied your note into the clipboard insted. You can paste it yourself now!"
+      "Copied your note into the clipboard instead. You can paste it yourself now!"
     copy(message, messageOverride);
   }
 }
@@ -65,7 +65,9 @@ function copy(message, messageOverride){
      name: "noteCopied",
      messageOverride: messageOverride || false
   },checkError);
-  originalElement.focus();
+  if (typeof originalElement.focus == "function"){	  
+	originalElement.focus();
+  }
 }
 
 // https://stackoverflow.com/a/25420726

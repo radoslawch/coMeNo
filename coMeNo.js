@@ -34,30 +34,48 @@ chrome.runtime.onMessage.addListener(
                 }
             )
         }else if (message.name == "refreshCoMeNo"){
-            chrome.storage.sync.get("notesArray", populateCoMeNoFromStorage);
+            chrome.storage.sync.get("zalgoCheckbox", populateCoMeNoFromStorage1stStep);
         }
     }
 );
 
 
-chrome.storage.sync.get("notesArray", populateCoMeNoFromStorage);
+
+
+
+
+chrome.storage.sync.get("zalgoCheckbox", populateCoMeNoFromStorage1stStep);
+
 
 // generates context menu
-function populateCoMeNoFromStorage(result){
-    chrome.contextMenus.removeAll();
+function populateCoMeNoFromStorage1stStep(result){
+	chrome.contextMenus.removeAll();
 
 
-    chrome.contextMenus.create({
-          id: "saveNote",
-          title: "~save note~",
-          contexts: ["link", "selection"]
-    });
-    
-    chrome.contextMenus.create({
-          id: "optionsPage",
-          title: "~edit notes~"
-    });
-    
+	chrome.contextMenus.create({
+		  id: "saveNote",
+		  title: "~save note~",
+		  contexts: ["link", "selection"]
+	});
+
+	chrome.contextMenus.create({
+		  id: "optionsPage",
+		  title: "~edit notes~"
+	});
+	console.dir(result);
+    if(result.zalgoCheckbox){
+        chrome.contextMenus.create({
+			id: "zalgo",
+			title: "H̵̡͟͠È̷͘͏ ̴̷̵̛͟C̷̡̀O̶͞M̵͘͜͞E̡S̀͞",
+			contexts: ["selection"]
+		});
+	}
+	chrome.storage.sync.get("notesArray", populateCoMeNoFromStorage2ndStep);
+}
+
+// generates context menu
+function populateCoMeNoFromStorage2ndStep(result){
+	
     if(result.notesArray){
         notesArray = result.notesArray;
         populateCoMeNoFromVariable();
@@ -130,6 +148,34 @@ function onClicked(info, tab){
     }else if(info.menuItemId == "optionsPage"){
       // opening options page
       browser.runtime.openOptionsPage();
+	}else if(info.menuItemId == "zalgo"){
+		if(info.selectionText != "" && typeof info.selectionText != "undefined"){
+          // saving selection
+		content = info.selectionText;
+
+		var request = new XMLHttpRequest();
+
+		request.open('GET', 'https://zalgo.io/api?text='+content, true);
+		request.onload = function () {
+		  // Begin accessing JSON data here
+			res = this.response
+			if(info.editable){
+				// if user pressed existing note
+				// paste it into editable field
+				sendToActiveTab({
+				name: "paste",
+				content: res
+			  });
+			}else{
+				// or copy it to clipboard if the click wasn't over an editable field
+				sendToActiveTab({
+				name: "copy",
+				content: res
+			  });
+			}
+		}
+		request.send();
+      }
     }else if(info.editable){
         // if user pressed existing note
         // paste it into editable field

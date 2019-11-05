@@ -38,9 +38,12 @@ function coMeNoOnLoad(){
   document.getElementById('removedCoMeNoPurgeAll').onclick = purgeAll;
 
   document.getElementById('addNewNote').onclick = addNewNote;
+  
+  document.getElementById('zalgoCheckbox').onclick = toggleZalgo;
 
   browser.storage.sync.get('notesArray', populateCoMeNoList);
   browser.storage.sync.get('removedNotesArray', populateRemovedCoMeNoList);
+  browser.storage.sync.get('zalgoCheckbox', populateZalgoCheckbox);
 }
 var notesArray = new Array();
 var removedNotesArray = new Array();
@@ -309,3 +312,15 @@ function divContentEditable(e) {
   }
 };
 document.addEventListener('keydown', divContentEditable, false);
+
+function populateZalgoCheckbox(result){  
+  document.getElementById('zalgoCheckbox').checked = result.zalgoCheckbox;
+}
+
+function toggleZalgo(){  
+  chrome.storage.sync.set({zalgoCheckbox: document.getElementById('zalgoCheckbox').checked}, function(){
+    chrome.runtime.sendMessage({
+      name: 'refreshCoMeNo'
+    },checkError);
+  });
+}
