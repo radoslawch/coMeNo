@@ -91,6 +91,8 @@ function populateCoMeNoList(result) {
 
     var td = document.createElement('td');
     td.innerHTML = '<u>remove</u>';
+    td.style["vertical-align"] = "top";
+    td.style["padding-top"] = "0.5em";
     td.onclick = function () { remove(this.parentElement.id) };
     tr.appendChild(td);
   }
