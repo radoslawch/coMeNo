@@ -39,6 +39,15 @@ function paste(message) {
     }
     actEl.selectionStart = selStartCopy + message.content.length;
     actEl.selectionEnd = selStartCopy + message.content.length;
+  } else if (actEl.contentEditable){
+    let sel = document.getSelection();
+    selStart = sel.anchorOffset;
+    selStartCopy = selStart;
+    selEnd = sel.focusOffset;
+
+    intendedValue = actEl.textContent.slice(0, selStart) + message.content + actEl.textContent.slice(selEnd);
+    actEl.textContent = intendedValue;
+    actEl.dispatchEvent(new InputEvent('input', { bubbles: true }));
   } else {
     // workaround for facebook/messenger
     if (document.body.parentElement.id == "facebook") {
