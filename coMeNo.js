@@ -1,5 +1,5 @@
-function checkError(error){
-  if(error){
+function checkError(error) {
+  if (error) {
     console.error("coMeNo: " + error);
   }
 }
@@ -8,23 +8,23 @@ function checkError(error){
 browser.storage.sync.remove('removedNotesArray');
 
 // sends a message to the content script
-function sendToActiveTab(message){
+function sendToActiveTab(message) {
   chrome.tabs.query({
-    windowId : chrome.windows.WINDOW_ID_CURRENT,
-    active : true
-  }, function(tabs) {
-    for (var i=0; i<tabs.length; ++i) {
-        chrome.tabs.sendMessage(tabs[i].id, message,checkError);
-      }
+    windowId: chrome.windows.WINDOW_ID_CURRENT,
+    active: true
+  }, function (tabs) {
+    for (var i = 0; i < tabs.length; ++i) {
+      chrome.tabs.sendMessage(tabs[i].id, message, checkError);
     }
+  }
   );
 }
 
 // receives a message from te content script
 // and reacts to it
 chrome.runtime.onMessage.addListener(
-  function(message, sender, sendResponse) {
-    if(message.name == "noteCopied"){
+  function (message, sender, sendResponse) {
+    if (message.name == "noteCopied") {
       chrome.notifications.create(
         {
           "type": "basic",
@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener(
           "message": message.messageOverride || "Note was copied to clipboard."
         }
       )
-    }else if (message.name == "refreshCoMeNo"){
+    } else if (message.name == "refreshCoMeNo") {
       chrome.storage.sync.get("zalgoCheckbox", populateCoMeNoFromStorage1stStep);
     }
   }
@@ -41,63 +41,63 @@ chrome.runtime.onMessage.addListener(
 chrome.storage.sync.get("zalgoCheckbox", populateCoMeNoFromStorage1stStep);
 
 // generates context menu
-function populateCoMeNoFromStorage1stStep(result){
-	chrome.contextMenus.removeAll();
+function populateCoMeNoFromStorage1stStep(result) {
+  chrome.contextMenus.removeAll();
 
-	chrome.contextMenus.create({
+  chrome.contextMenus.create({
     id: "saveNote",
     title: "~save note~",
     contexts: ["link", "selection"]
-	});
+  });
 
-	chrome.contextMenus.create({
+  chrome.contextMenus.create({
     id: "optionsPage",
     title: "~edit notes~"
-	});
-	console.dir(result);
-  if(result.zalgoCheckbox){
+  });
+  console.dir(result);
+  if (result.zalgoCheckbox) {
     chrome.contextMenus.create({
-			id: "zalgo",
-			title: "H̵̡͟͠È̷͘͏ ̴̷̵̛͟C̷̡̀O̶͞M̵͘͜͞E̡S̀͞",
-			contexts: ["selection"]
-		});
-	}
-	chrome.storage.sync.get("notesArray", populateCoMeNoFromStorage2ndStep);
+      id: "zalgo",
+      title: "H̵̡͟͠È̷͘͏ ̴̷̵̛͟C̷̡̀O̶͞M̵͘͜͞E̡S̀͞",
+      contexts: ["selection"]
+    });
+  }
+  chrome.storage.sync.get("notesArray", populateCoMeNoFromStorage2ndStep);
 }
 
 // generates context menu
-function populateCoMeNoFromStorage2ndStep(result){
-	
-  if(result.notesArray){
+function populateCoMeNoFromStorage2ndStep(result) {
+
+  if (result.notesArray) {
     notesArray = result.notesArray;
     populateCoMeNoFromVariable();
 
-  }else{
+  } else {
     notesArray = new Array();
   }
 }
 
 // populates context menu with notes
-function populateCoMeNoFromVariable(){
+function populateCoMeNoFromVariable() {
   chrome.contextMenus.create({
     id: "separator",
     type: "separator",
     contexts: ["editable", "page"]
   });
-  for(var i = 0; i < notesArray.length; i++){
+  for (var i = 0; i < notesArray.length; i++) {
     chrome.contextMenus.create({
       id: notesArray[i].id.toString(),
-      title: notesArray[i].content.slice(0,24),
+      title: notesArray[i].content.slice(0, 24),
       contexts: ["editable", "page"]
     });
   }
 }
 
 // updates context menu with a new note
-function addNewCoMeNo(){
+function addNewCoMeNo() {
   chrome.contextMenus.create({
-    id: notesArray[notesArray.length-1].id.toString(),
-    title: notesArray[notesArray.length-1].content.slice(0,24),
+    id: notesArray[notesArray.length - 1].id.toString(),
+    title: notesArray[notesArray.length - 1].content.slice(0, 24),
     contexts: ["editable", "page"]
   });
 }
@@ -105,81 +105,81 @@ function addNewCoMeNo(){
 chrome.contextMenus.onClicked.addListener(onClicked);
 
 // reacts on context menu click
-function onClicked(info, tab){
-  for(var i = 0; i < notesArray.length; i++){
-    if(notesArray[i].id == info.menuItemId)break;
+function onClicked(info, tab) {
+  for (var i = 0; i < notesArray.length; i++) {
+    if (notesArray[i].id == info.menuItemId) break;
   }
 
-  if(info.menuItemId == "saveNote"){
+  if (info.menuItemId == "saveNote") {
     // saving selection as a new note
-    if(info.selectionText != "" && typeof info.selectionText != "undefined"){
+    if (info.selectionText != "" && typeof info.selectionText != "undefined") {
       // saving selection
       content = info.selectionText;
-    }else if(info.linkUrl != "" && typeof info.linkUrl != "undefined"){
+    } else if (info.linkUrl != "" && typeof info.linkUrl != "undefined") {
       // saving url
       content = info.linkUrl;
-    }else{
+    } else {
       return;
     }
 
-    if(notesArray.length > 0){
+    if (notesArray.length > 0) {
       // if any not exist add new with id one higher than last element of
       // notesArray
       notesArray[notesArray.length] = {
-        id: notesArray[notesArray.length-1].id+1,
+        id: notesArray[notesArray.length - 1].id + 1,
         content: content
       };
-    }else{
+    } else {
       // if there are no notes yet add new with id = 0
       notesArray[notesArray.length] = {
         id: 0,
         content: content
       };
     }
-    chrome.storage.sync.set({notesArray: notesArray}, addNewCoMeNo);
-  }else if(info.menuItemId == "optionsPage"){
+    chrome.storage.sync.set({ notesArray: notesArray }, addNewCoMeNo);
+  } else if (info.menuItemId == "optionsPage") {
     // opening options page
     browser.runtime.openOptionsPage();
-	}else if(info.menuItemId == "zalgo"){
-		if(info.selectionText != "" && typeof info.selectionText != "undefined"){
+  } else if (info.menuItemId == "zalgo") {
+    if (info.selectionText != "" && typeof info.selectionText != "undefined") {
       // saving selection
-		content = info.selectionText;
+      content = info.selectionText;
 
-		var request = new XMLHttpRequest();
+      var request = new XMLHttpRequest();
 
-		request.open('GET', 'https://zalgo.io/api?text='+content, true);
-		request.onload = function () {
-		  // Begin accessing JSON data here
-			res = this.response
-			if(info.editable){
-				// if user pressed existing note
-				// paste it into editable field
-				sendToActiveTab({
-				name: "paste",
-				content: res
-			  });
-			}else{
-				// or copy it to clipboard if the click wasn't over an editable field
-				sendToActiveTab({
-				name: "copy",
-				content: res
-			  });
-			}
-		}
-		request.send();
+      request.open('GET', 'https://zalgo.io/api?text=' + content, true);
+      request.onload = function () {
+        // Begin accessing JSON data here
+        res = this.response
+        if (info.editable) {
+          // if user pressed existing note
+          // paste it into editable field
+          sendToActiveTab({
+            name: "paste",
+            content: res
+          });
+        } else {
+          // or copy it to clipboard if the click wasn't over an editable field
+          sendToActiveTab({
+            name: "copy",
+            content: res
+          });
+        }
+      }
+      request.send();
     }
-  }else if(info.editable){
+  } else if (info.editable) {
     // if user pressed existing note
     // paste it into editable field
     sendToActiveTab({
-    name: "paste",
-    content: notesArray[i].content
+      name: "paste",
+      content: notesArray[i].content
     });
-  }else{
+  } else {
     // or copy it to clipboard if the click wasn't over an editable field
     sendToActiveTab({
-    name: "copy",
-    content: notesArray[i].content
+      name: "copy",
+      content: notesArray[i].content
     });
   }
 };
