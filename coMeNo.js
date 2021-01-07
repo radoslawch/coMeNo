@@ -12,11 +12,11 @@ function sendToActiveTab(message) {
   chrome.tabs.query({
     windowId: chrome.windows.WINDOW_ID_CURRENT,
     active: true
-  }, function (tabs) {
-    for (var i = 0; i < tabs.length; ++i) {
-      chrome.tabs.sendMessage(tabs[i].id, message, checkError);
+    }, function (tabs) {
+      for (var i = 0; i < tabs.length; ++i) {
+        chrome.tabs.sendMessage(tabs[i].id, message, checkError);
+      }
     }
-  }
   );
 }
 
@@ -71,7 +71,6 @@ function populateCoMeNoFromStorage2ndStep(result) {
   if (result.notesArray) {
     notesArray = result.notesArray;
     populateCoMeNoFromVariable();
-
   } else {
     notesArray = new Array();
   }
