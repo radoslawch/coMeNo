@@ -22,14 +22,21 @@ function paste(message) {
   // Doesn't work in (for ex.) Facebook Messenger input field.
   // So first check if we are dealing with normal input field.
   var nodeName = actEl.nodeName.toLowerCase();
+  let selStart = 0;
+  let selEnd = 0;
 
   // if making an attempt to paste into normal input field or textarea
   // find current selection and place the note in it
   // copy to clipboard otherwise
   if ((nodeName == "input" && /^(?:text|email|number|search|tel|url|password)$/i.test(actEl.type)) || nodeName == "textarea") {
     selStart = actEl.selectionStart;
-    selStartCopy = selStart;
     selEnd = actEl.selectionEnd;
+    if (selStart > selEnd){
+      selStart += selEnd;
+      selEnd = selStart - selEnd;
+      selStart -= selEnd;
+    }
+
     if (actEl.hasAttribute("value") || actEl.innerText == "") {
       intendedValue = actEl.value.slice(0, selStart) + message.content + actEl.value.slice(selEnd);
       actEl.value = intendedValue;
@@ -37,8 +44,8 @@ function paste(message) {
       intendedValue = actEl.innerText.slice(0, selStart) + message.content + actEl.innerText.slice(selEnd);
       actEl.innerText = intendedValue;
     }
-    actEl.selectionStart = selStartCopy + message.content.length;
-    actEl.selectionEnd = selStartCopy + message.content.length;
+    actEl.selectionStart = selStart + message.content.length;
+    actEl.selectionEnd = selStart + message.content.length;
   } else if (actEl.contentEditable && document.body.parentElement.id == "facebook") {
     var dc = getDeepestChild(actEl);
     var elementToDispatchEventFrom = dc.parentElement;
@@ -55,8 +62,12 @@ function paste(message) {
       // by changing existing content
       let sel = document.getSelection();
       selStart = sel.anchorOffset;
-      selStartCopy = selStart;
       selEnd = sel.focusOffset;
+      if (selStart > selEnd){
+        selStart += selEnd;
+        selEnd = selStart - selEnd;
+        selStart -= selEnd;
+      }
 
       intendedValue = dc.textContent.slice(0, selStart) + message.content + dc.textContent.slice(selEnd);
       dc.textContent = intendedValue;
@@ -68,15 +79,21 @@ function paste(message) {
     // otherwise there will be two of them after
     // Facebook adds it itself!
     if (newEl) newEl.remove();
+    moveSelectionByCharacters(selStart + message.content.length);
   } else if (actEl.contentEditable){
     let sel = document.getSelection();
     selStart = sel.anchorOffset;
-    selStartCopy = selStart;
     selEnd = sel.focusOffset;
+    if (selStart > selEnd){
+      selStart += selEnd;
+      selEnd = selStart - selEnd;
+      selStart -= selEnd;
+    }
 
     intendedValue = actEl.textContent.slice(0, selStart) + message.content + actEl.textContent.slice(selEnd);
     actEl.textContent = intendedValue;
     actEl.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    moveSelectionByCharacters(selStart + message.content.length);
   } else {
     let messageOverride = "It's impossible to input into non-standard input field, sorry. :-(\n" +
     "Copied your note into the clipboard instead. You can paste it yourself now!"
@@ -141,3 +158,12 @@ var getActiveElement = function (document) {
 
   return document.activeElement;
 };
+
+function moveSelectionByCharacters(n){
+  let i = 0;
+  let sel = document.getSelection();
+  while (sel.focusOffset < n && i++ < n){
+    sel.modify("move", "right", "character");
+    sel = document.getSelection();
+  }
+}
