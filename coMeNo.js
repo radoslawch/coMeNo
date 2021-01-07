@@ -82,13 +82,13 @@ function populateCoMeNoFromVariable() {
   chrome.contextMenus.create({
     id: "separator",
     type: "separator",
-    contexts: ["editable", "page"]
+    contexts: ["editable", "page", "frame"]
   });
   for (var i = 0; i < notesArray.length; i++) {
     chrome.contextMenus.create({
       id: notesArray[i].id.toString(),
       title: notesArray[i].content.slice(0, 24),
-      contexts: ["editable", "page"]
+      contexts: ["editable", "page", "frame"]
     });
   }
 }
@@ -98,7 +98,7 @@ function addNewCoMeNo() {
   chrome.contextMenus.create({
     id: notesArray[notesArray.length - 1].id.toString(),
     title: notesArray[notesArray.length - 1].content.slice(0, 24),
-    contexts: ["editable", "page"]
+    contexts: ["editable", "page", "frame"]
   });
 }
 

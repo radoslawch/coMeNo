@@ -99,13 +99,13 @@ function getDeepestChild(element) {
 // the copy command
 function copy(message, messageOverride) {
   let originalElement = getActiveElement();
-  var coMeNoHiddenInput = document.createElement("input");
+  var coMeNoHiddenInput = window.parent.document.createElement("input");
   coMeNoHiddenInput.setAttribute("type", "collapse");
   coMeNoHiddenInput.setAttribute("id", "coMeNoHiddenInput");
   coMeNoHiddenInput.setAttribute("value", message.content);
-  document.body.appendChild(coMeNoHiddenInput);
+  window.parent.document.body.appendChild(coMeNoHiddenInput);
   coMeNoHiddenInput.select();
-  document.execCommand("copy");
+  window.parent.document.execCommand("copy");
   coMeNoHiddenInput.remove();
   chrome.runtime.sendMessage({
     name: "noteCopied",
@@ -137,9 +137,7 @@ var getActiveElement = function (document) {
         return focused; // The focused
       }
     }
-  } else {
-    return document.activeElement;
   }
 
-  return false;
+  return document.activeElement;
 };
