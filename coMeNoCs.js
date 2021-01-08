@@ -4,9 +4,10 @@ function checkError(error) {
   }
 }
 
-//message from bg
+// message from background script
 chrome.runtime.onMessage.addListener(pasteOrCopy);
 
+// message receiver function
 function pasteOrCopy(message, sender, sendResponse) {
   if (message.name == "paste") {
     paste(message);
@@ -16,88 +17,99 @@ function pasteOrCopy(message, sender, sendResponse) {
   }
 }
 
+// paste note to current input
 function paste(message) {
-  actEl = getActiveElement();
-  // Works well on standard input elements.
-  // Doesn't work in (for ex.) Facebook Messenger input field.
-  // So first check if we are dealing with normal input field.
-  var nodeName = actEl.nodeName.toLowerCase();
+  let actEl = getActiveElement();
   let selStart = 0;
   let selEnd = 0;
-
+	[selStart, selEnd] = getSelectionStartEnd();
+	
   // if making an attempt to paste into normal input field or textarea
   // find current selection and place the note in it
-  // copy to clipboard otherwise
-  if ((nodeName == "input" && /^(?:text|email|number|search|tel|url|password)$/i.test(actEl.type)) || nodeName == "textarea") {
-    selStart = actEl.selectionStart;
-    selEnd = actEl.selectionEnd;
-    if (selStart > selEnd){
-      selStart += selEnd;
-      selEnd = selStart - selEnd;
-      selStart -= selEnd;
-    }
-
+  if (isNormalInputField()) {
+    // dealing with normal input field
+    // check if it's input type and update value
+    // update innerText otherwise
     if (actEl.hasAttribute("value") || actEl.innerText == "") {
-      intendedValue = actEl.value.slice(0, selStart) + message.content + actEl.value.slice(selEnd);
-      actEl.value = intendedValue;
+			actEl.value = calculateNewFieldValue(actEl.value);
     } else {
-      intendedValue = actEl.innerText.slice(0, selStart) + message.content + actEl.innerText.slice(selEnd);
-      actEl.innerText = intendedValue;
+			actEl.innerText = calculateNewFieldValue(actEl.innerText);
     }
     actEl.selectionStart = selStart + message.content.length;
-    actEl.selectionEnd = selStart + message.content.length;
-  } else if (actEl.contentEditable && document.body.parentElement.id == "facebook") {
-    var dc = getDeepestChild(actEl);
-    var elementToDispatchEventFrom = dc.parentElement;
-    let newEl;
-    if (dc.nodeName.toLowerCase() == "br") {
-      // attempt to paste into empty messenger field
-      // by creating new element and setting it's value
-      newEl = document.createElement("span");
-      newEl.setAttribute("data-text", "true");
-      dc.parentElement.appendChild(newEl);
-      newEl.innerText = message.content;
-    } else {
-      // attempt to paste into not empty messenger field
-      // by changing existing content
-      let sel = document.getSelection();
-      selStart = sel.anchorOffset;
-      selEnd = sel.focusOffset;
-      if (selStart > selEnd){
-        selStart += selEnd;
-        selEnd = selStart - selEnd;
-        selStart -= selEnd;
-      }
-
-      intendedValue = dc.textContent.slice(0, selStart) + message.content + dc.textContent.slice(selEnd);
-      dc.textContent = intendedValue;
-      elementToDispatchEventFrom = elementToDispatchEventFrom.parentElement;
-    }
-    // simulate user's input
-    elementToDispatchEventFrom.dispatchEvent(new InputEvent('input', { bubbles: true }));
-    // remove new element if it exists
-    // otherwise there will be two of them after
-    // Facebook adds it itself!
-    if (newEl) newEl.remove();
-    moveSelectionByCharacters(selStart + message.content.length);
+    actEl.selectionEnd = selStart + message.content.length;		
   } else if (actEl.contentEditable){
-    let sel = document.getSelection();
-    selStart = sel.anchorOffset;
-    selEnd = sel.focusOffset;
-    if (selStart > selEnd){
-      selStart += selEnd;
-      selEnd = selStart - selEnd;
-      selStart -= selEnd;
-    }
-
-    intendedValue = actEl.textContent.slice(0, selStart) + message.content + actEl.textContent.slice(selEnd);
-    actEl.textContent = intendedValue;
-    actEl.dispatchEvent(new InputEvent('input', { bubbles: true }));
-    moveSelectionByCharacters(selStart + message.content.length);
-  } else {
+    // dealing with contentEditable field (for ex. editable div)
+		let elementToDispatchEventFrom;
+		let newEl;
+		if (isFacebookInputField()) {
+      // dealing with Facebook Messenger field
+      // which requires dedicated behaviour
+			let dc = getDeepestChild(actEl);
+			elementToDispatchEventFrom = dc.parentElement;
+			if (dc.nodeName.toLowerCase() == "br") {
+				// attempt to paste into empty messenger field
+				// by creating new element and setting it's value
+				newEl = document.createElement("span");
+				newEl.setAttribute("data-text", "true");
+				dc.parentElement.appendChild(newEl);
+				newEl.innerText = message.content;
+			} else {
+				// attempt to paste into not empty messenger field
+				// by changing existing content
+				dc.textContent = calculateNewFieldValue(dc.textContent);
+				elementToDispatchEventFrom = elementToDispatchEventFrom.parentElement;
+			}			
+		} else {
+      // dealing with other contentEditable field
+      // (for ex. WhatsApp)
+			elementToDispatchEventFrom = actEl;
+			actEl.textContent = calculateNewFieldValue(actEl.textContent);
+		}
+		// simulate user's input for contentEditable field
+		elementToDispatchEventFrom.dispatchEvent(new InputEvent('input', { bubbles: true }));
+		// remove new element if it exists
+		// otherwise there will be two of them after
+		// Facebook adds it itself
+    if (newEl) newEl.remove();
+    
+    // move cursor to proper position
+		moveSelectionByCharacters(selStart + message.content.length);		
+	} else {
+    // fallback to copying the message to clipboard if pasting wasn't possible
     let messageOverride = "It's impossible to input into non-standard input field, sorry. :-(\n" +
     "Copied your note into the clipboard instead. You can paste it yourself now!"
     copy(message, messageOverride);
+  }
+  
+  // calculate new field value by placing the note in proper position
+	function calculateNewFieldValue(fieldVal){
+		return fieldVal.slice(0, selStart) + message.content + fieldVal.slice(selEnd);
+  }
+  
+  // get current selection from webpage
+  function getSelectionStartEnd(){
+    let selStart = 0;
+    let selEnd = 0;
+    if (isNormalInputField()){
+      selStart = actEl.selectionStart;
+      selEnd = actEl.selectionEnd;
+    } else if (actEl.contentEditable){
+      let sel = document.getSelection();
+      selStart = sel.anchorOffset;
+      selEnd = sel.focusOffset;
+    }
+    [selStart, selEnd] = orderTwoNumbers(selStart, selEnd);
+    return [selStart, selEnd];
+  }
+  // return true for Facebook Messenger input fields
+  function isFacebookInputField(){
+    return actEl.contentEditable && document.body.parentElement.id == "facebook";
+  }
+
+  // return true for normal input field
+  function isNormalInputField(){
+    let nodeName = actEl.nodeName.toLowerCase();
+    return (nodeName == "input" && /^(?:text|email|number|search|tel|url|password)$/i.test(actEl.type)) || nodeName == "textarea";
   }
 }
 
@@ -159,6 +171,10 @@ var getActiveElement = function (document) {
   return document.activeElement;
 };
 
+// move selection by number of characters
+// compare current offset and the target each time
+// to make sure the cursor is right position even when
+// pasting special characters
 function moveSelectionByCharacters(n){
   let i = 0;
   let sel = document.getSelection();
@@ -166,4 +182,14 @@ function moveSelectionByCharacters(n){
     sel.modify("move", "right", "character");
     sel = document.getSelection();
   }
+}
+
+// change order of two numbers so the lower one is first
+function orderTwoNumbers(selStart, selEnd){
+	if (selStart > selEnd){
+		selStart += selEnd;
+		selEnd = selStart - selEnd;
+		selStart -= selEnd;
+	}
+	return [selStart, selEnd];
 }
