@@ -4,7 +4,7 @@ function checkError(error) {
   }
 }
 
-// purge removed notes from previous Firefox sessoin
+// purge removed notes from previous Firefox session
 browser.storage.sync.remove('removedNotesArray');
 
 // sends a message to the content script
@@ -54,7 +54,7 @@ function populateCoMeNoFromStorage1stStep(result) {
     id: "optionsPage",
     title: "~edit notes~"
   });
-  console.dir(result);
+  
   if (result.zalgoCheckbox) {
     chrome.contextMenus.create({
       id: "zalgo",
@@ -105,11 +105,31 @@ chrome.contextMenus.onClicked.addListener(onClicked);
 
 // reacts on context menu click
 function onClicked(info, tab) {
+  // iterate over notes (id is not equal to position)
   for (var i = 0; i < notesArray.length; i++) {
     if (notesArray[i].id == info.menuItemId) break;
   }
 
   if (info.menuItemId == "saveNote") {
+    saveNote();
+  } else if (info.menuItemId == "optionsPage") {
+    browser.runtime.openOptionsPage();
+  } else if (info.menuItemId == "zalgo") {
+    if (info.selectionText != "" && typeof info.selectionText != "undefined") {
+      // saving selection
+      content = info.selectionText;
+      var request = new XMLHttpRequest();
+      request.open('GET', 'https://zalgo.io/api?text=' + content, true);
+      request.onload = function () {        
+        copyOrPasteNote(this.response);        
+      }
+      request.send();
+    }
+  } else {
+    copyOrPasteNote(notesArray[i].content);
+  }  
+
+  function saveNote(){    
     // saving selection as a new note
     if (info.selectionText != "" && typeof info.selectionText != "undefined") {
       // saving selection
@@ -117,12 +137,10 @@ function onClicked(info, tab) {
     } else if (info.linkUrl != "" && typeof info.linkUrl != "undefined") {
       // saving url
       content = info.linkUrl;
-    } else {
-      return;
     }
 
     if (notesArray.length > 0) {
-      // if any not exist add new with id one higher than last element of
+      // if any note exists add new with id one higher than last element of
       // notesArray
       notesArray[notesArray.length] = {
         id: notesArray[notesArray.length - 1].id + 1,
@@ -136,49 +154,22 @@ function onClicked(info, tab) {
       };
     }
     chrome.storage.sync.set({ notesArray: notesArray }, addNewCoMeNo);
-  } else if (info.menuItemId == "optionsPage") {
-    // opening options page
-    browser.runtime.openOptionsPage();
-  } else if (info.menuItemId == "zalgo") {
-    if (info.selectionText != "" && typeof info.selectionText != "undefined") {
-      // saving selection
-      content = info.selectionText;
-
-      var request = new XMLHttpRequest();
-
-      request.open('GET', 'https://zalgo.io/api?text=' + content, true);
-      request.onload = function () {
-        // Begin accessing JSON data here
-        res = this.response
-        if (info.editable) {
-          // if user pressed existing note
-          // paste it into editable field
-          sendToActiveTab({
-            name: "paste",
-            content: res
-          });
-        } else {
-          // or copy it to clipboard if the click wasn't over an editable field
-          sendToActiveTab({
-            name: "copy",
-            content: res
-          });
-        }
-      }
-      request.send();
-    }
-  } else if (info.editable) {
-    // if user pressed existing note
-    // paste it into editable field
-    sendToActiveTab({
-      name: "paste",
-      content: notesArray[i].content
-    });
-  } else {
-    // or copy it to clipboard if the click wasn't over an editable field
-    sendToActiveTab({
-      name: "copy",
-      content: notesArray[i].content
-    });
   }
-};
+
+  function copyOrPasteNote(data){
+    if (info.editable) {
+      // if user pressed existing note
+      // paste it into editable field
+      sendToActiveTab({
+        name: "paste",
+        content: data
+      });
+    } else {
+      // or copy it to clipboard if the click wasn't over an editable field
+      sendToActiveTab({
+        name: "copy",
+        content: data
+      });
+    }
+  }
+}
