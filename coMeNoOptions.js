@@ -90,7 +90,7 @@ function populateCoMeNoList(result) {
     tr.appendChild(td);
 
     var td = document.createElement('td');
-    td.innerHTML = '<u>remove</u>';
+    td.innerHTML = '<button>remove</button>';
     td.style["vertical-align"] = "top";
     td.style["padding-top"] = "0.5em";
     td.onclick = function () { remove(this.parentElement.id) };
@@ -137,12 +137,12 @@ function populateRemovedCoMeNoList(result) {
     tr.appendChild(td);
 
     var td = document.createElement('td');
-    td.innerHTML = '<u>recover</u>';
+    td.innerHTML = '<button>recover</button>';
     td.onclick = function () { recover(this.parentElement.id) };
     tr.appendChild(td);
 
     var td = document.createElement('td');
-    td.innerHTML = '<u>purge</u>';
+    td.innerHTML = '<button>purge</button>';
     td.onclick = function () { purge(this.parentElement.id) };
     tr.appendChild(td);
   }
