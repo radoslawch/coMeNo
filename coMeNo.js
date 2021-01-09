@@ -46,13 +46,13 @@ function populateCoMeNoFromStorage1stStep(result) {
 
   chrome.contextMenus.create({
     id: "saveNote",
-    title: "~save note~",
+    title: "save note",
     contexts: ["link", "selection"]
   });
 
   chrome.contextMenus.create({
     id: "optionsPage",
-    title: "~edit notes~"
+    title: "edit notes (open options)"
   });
   
   if (result.zalgoCheckbox) {
